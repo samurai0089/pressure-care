@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>気圧通知アプリ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#007bff">
+</head>
+<body>
+
+<div class="container">
+
+  <header class="header">
+    <h1>今日の気圧</h1>
+    <select id="citySelect">
+      <option th:each="c : ${cities}"
+              th:value="${c.name()}"
+              th:text="${c.label}"></option>
+    </select>
+  </header>
+
+  <!-- ローディング -->
+  <div id="loading" class="loading hidden">読み込み中…</div>
+
+  <!-- 今日の状態 -->
+  <section id="statusCard" class="card status-card">
+    <div class="status-header">
+      <h2>今日の状態</h2>
+      <span id="condition" class="badge"></span>
+    </div>
+
+    <div class="status-main">
+      <div class="status-item">
+        <span class="label">現在</span>
+        <span id="current" class="value"></span>
+        <span class="unit">hPa</span>
+      </div>
+
+      <div class="status-item">
+        <span class="label">昨日比</span>
+        <span id="difference" class="value"></span>
+        <span class="unit">hPa</span>
+      </div>
+    </div>
+
+    <!-- JSが使うので非表示でも残す -->
+    <span id="yesterday" class="hidden"></span>
+
+    <p id="warningMessage" class="message hidden"></p>
+  </section>
+  
+  <!-- 明日の注意 -->
+  <section id="tomorrowMsg" class="tomorrow hidden"></section>
+
+  <!-- グラフ -->
+  <section class="card">
+    <h2>過去7日間の気圧推移</h2>
+    <canvas id="pressureChart"></canvas>
+  </section>
+
+  <!-- 設定 -->
+  <button id="openSettings" class="settings-btn">⚙ 設定</button>
+
+
+</div>
+
+<!-- 設定モーダル -->
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3>設定</h3>
+      <button id="closeSettings" class="close-btn">×</button>
+    </div>
+
+	<div class="modal-body">
+
+	  <label>
+	    注意閾値
+	    <input id="settingWarning" type="number" value="-3">
+	    <small class="help-text">
+	      昨日より気圧がどれくらい下がったら「注意」と判定するかを設定します。
+	    </small>
+	  </label>
+
+	  <label>
+	    警戒閾値
+	    <input id="settingDanger" type="number" value="-6">
+	    <small class="help-text">
+	      大きな気圧変化があった場合に「警戒」と表示する基準です。
+	    </small>
+	  </label>
+
+	  <label>
+	    更新間隔（分）
+	    <input id="settingRefresh" type="number" value="30">
+	    <small class="help-text">
+	      何分ごとに最新の気圧データを取得するかを指定します。
+	    </small>
+	  </label>
+
+	</div>
+
+
+    <div class="modal-footer">
+      <button id="saveSettings" class="primary">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- フルスクリーンローディング -->
+<div id="loadingOverlay" class="overlay hidden">
+  <div class="spinner"></div>
+  <p>読み込み中...</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="/js/pressure.js"></script>
+</body>
+</html>
