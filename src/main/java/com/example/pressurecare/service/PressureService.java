@@ -14,16 +14,28 @@ import com.example.pressurecare.model.ConditionLevel;
 import com.example.pressurecare.model.DailyPressure;
 import com.example.pressurecare.model.PressureInfo;
 
+/**
+ * 気圧データを外部APIから取得・加工し、
+ * 画面やAPIに渡すためのビジネスロジックを担うサービスクラス
+ */
 @Service
 public class PressureService {
 
-	private static final double WARNING_THRESHOLD = -3.0;
-	private static final double DANGER_THRESHOLD = -6.0;
-//    private static final double LATITUDE = 34.6937;
-//    private static final double LONGITUDE = 135.5023;
+    /** 注意レベル判定の閾値（前日比） */
+    private static final double WARNING_THRESHOLD = -3.0;
 
+    /** 危険レベル判定の閾値（前日比） */
+    private static final double DANGER_THRESHOLD = -6.0;
+
+    /** 外部気象API通信用 */
     private final RestTemplate restTemplate = new RestTemplate();
 
+    /**
+     * 現在の気圧・前日平均との差分・体調レベルをまとめて取得する
+     *
+     * @param city 対象都市
+     * @return 画面表示・通知用の気圧情報
+     */
     public PressureInfo getPressureFromApi(City city) {
         double currentPressure = getCurrentPressure(city);
         double yesterdayPressure = getYesterdayAveragePressure(city);
@@ -39,6 +51,12 @@ public class PressureService {
         return info;
     }
 
+    /**
+     * 指定都市の現在の気圧を取得する
+     *
+     * @param city 対象都市
+     * @return 現在の地表気圧
+     */
     private double getCurrentPressure(City city) {
         String url =
             "https://api.open-meteo.com/v1/forecast" +
@@ -51,6 +69,12 @@ public class PressureService {
         return ((Number) current.get("surface_pressure")).doubleValue();
     }
 
+    /**
+     * 前日の1日分の気圧から平均値を算出する
+     *
+     * @param city 対象都市
+     * @return 前日の平均気圧
+     */
     private double getYesterdayAveragePressure(City city) {
         LocalDate yesterday = LocalDate.now().minusDays(1);
 
@@ -67,10 +91,19 @@ public class PressureService {
         List<Number> pressures = (List<Number>) hourly.get("surface_pressure");
 
         double sum = 0;
-        for (Number p : pressures) sum += p.doubleValue();
+        for (Number p : pressures) {
+            sum += p.doubleValue();
+        }
         return sum / pressures.size();
     }
 
+    /**
+     * 過去7日分の気圧データを日別平均に変換して取得する
+     * （グラフ表示用）
+     *
+     * @param city 対象都市
+     * @return 日別平均気圧リスト
+     */
     public List<DailyPressure> getWeeklyPressure(City city) {
 
         LocalDate end = LocalDate.now().minusDays(1);
@@ -90,6 +123,7 @@ public class PressureService {
         List<String> times = (List<String>) hourly.get("time");
         List<Number> pressures = (List<Number>) hourly.get("surface_pressure");
 
+        // 日付ごとに気圧をまとめる
         Map<String, List<Double>> dailyMap = new LinkedHashMap<>();
 
         for (int i = 0; i < times.size(); i++) {
@@ -98,6 +132,7 @@ public class PressureService {
             dailyMap.get(date).add(pressures.get(i).doubleValue());
         }
 
+        // 日別平均値を算出
         List<DailyPressure> result = new ArrayList<>();
         for (Map.Entry<String, List<Double>> entry : dailyMap.entrySet()) {
             double avg = entry.getValue()
@@ -110,8 +145,13 @@ public class PressureService {
 
         return result;
     }
-    
-    /** 体調レベル判定 */
+
+    /**
+     * 気圧差から体調レベルを判定する
+     *
+     * @param diff 前日平均との差
+     * @return 体調レベル
+     */
     private ConditionLevel judgeCondition(double diff) {
         if (diff <= DANGER_THRESHOLD) {
             return ConditionLevel.DANGER;

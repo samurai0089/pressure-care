@@ -14,11 +14,13 @@
 
   <header class="header">
     <h1>今日の気圧</h1>
-    <select id="citySelect">
-      <option th:each="c : ${cities}"
-              th:value="${c.name()}"
-              th:text="${c.label}"></option>
-    </select>
+	<select id="citySelect">
+	  <option value="OSAKA" selected>大阪</option>
+	  <option value="TOKYO">東京</option>
+	  <option value="NAGOYA">名古屋</option>
+	  <option value="FUKUOKA">福岡</option>
+	  <option value="SAPPORO">札幌</option>
+	</select>
   </header>
 
   <!-- ローディング -->
