@@ -8,7 +8,7 @@ Webアプリでありながら **PWA（Progressive Web App）** に対応して�
 
 ---
 
-## 🌤 主な機能
+## 主な機能
 
 - 現在・昨日の気圧取得（外部API）
 - 昨日比から体調レベルを判定（SAFE / WARNING / DANGER）
@@ -23,7 +23,7 @@ Webアプリでありながら **PWA（Progressive Web App）** に対応して�
 
 ---
 
-## 🧱 技術スタック
+##  技術スタック
 
 ### バックエンド
 - Java
@@ -41,7 +41,7 @@ Webアプリでありながら **PWA（Progressive Web App）** に対応して�
 
 ---
 
-## 📱 PWA（Progressive Web App）対応
+## PWA（Progressive Web App）対応
 
 PressureCare は PWA に対応しており、  
 スマートフォンでは **ネイティブアプリのように利用可能**です。
@@ -98,7 +98,7 @@ html
 
 <link rel="icon" href="/favicon.ico">
 
-🔔 通知機能について
+通知機能について
 通知は DANGER 判定時に表示
 
 PWAインストール後は Service Worker 経由で通知
@@ -122,7 +122,7 @@ registration.showNotification('PressureCare 警戒', {
 設定内容は localStorage に保存され、
 ページ再読み込み後も保持されます。
 
-🧠 工夫した点
+工夫した点
 判定ロジックと表示処理の分離
 
 UI変更に強い JavaScript 実装
@@ -133,7 +133,7 @@ API失敗時のフォールバック対応
 
 UXを邪魔しないアニメーション設計
 
-🚀 今後の改善案
+今後の改善案
 バックグラウンドPush通知
 
 体調ログ記録機能
@@ -141,9 +141,6 @@ UXを邪魔しないアニメーション設計
 気圧と体調の相関分析
 
 ダークモード対応
-
-📸 スクリーンショット
-（※ ここに画面キャプチャを追加予定）
 
 📝 起動方法
 ./mvnw spring-boot:run
