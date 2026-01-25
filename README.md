@@ -94,8 +94,6 @@ favicon.ico を static 直下に配置
 
 ブラウザが自動で /favicon.ico を参照
 
-html
-
 <link rel="icon" href="/favicon.ico">
 
 通知機能について
@@ -105,7 +103,6 @@ PWAインストール後は Service Worker 経由で通知
 
 初回のみ通知許可を要求
 
-js
 registration.showNotification('PressureCare 警戒', {
   body: '気圧変化が大きいため、体調に注意してください'
 });
