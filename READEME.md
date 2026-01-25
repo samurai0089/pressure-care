@@ -54,7 +54,7 @@ PressureCare は PWA に対応しており、
 
 ---
 
-## 🗂 PWA関連ファイル構成
+## PWA関連ファイル構成
 
 src/main/resources/static/
 ├─ manifest.json
@@ -67,7 +67,7 @@ src/main/resources/static/
 
 ---
 
-## 🖼 アイコン・faviconについて
+## アイコン・faviconについて
 
 ### PWAアイコン
 - `icon-192.png`
@@ -142,7 +142,6 @@ UXを邪魔しないアニメーション設計
 
 ダークモード対応
 
-📝 起動方法
-./mvnw spring-boot:run
+ 起動方法
 ブラウザで以下にアクセス
 http://localhost:8080/pressure
