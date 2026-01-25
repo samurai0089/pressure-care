@@ -18,6 +18,17 @@ public class PressureInfo {
     /** 気圧変化による体調レベル */
     private ConditionLevel conditionLevel;
 
+    
+    public static PressureInfo empty() {
+        PressureInfo info = new PressureInfo();
+        info.setCurrentPressure(0);
+        info.setYesterdayPressure(0);
+        info.setDifference(0);
+        info.setConditionLevel(ConditionLevel.SAFE); // ★ enum を渡す
+        return info;
+    }
+
+
     /** 現在の気圧を取得 */
     public double getCurrentPressure() {
         return currentPressure;

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8" />
   <title>気圧通知アプリ</title>
@@ -15,43 +15,61 @@
   <header class="header">
     <h1>今日の気圧</h1>
 	<select id="citySelect">
-	  <option value="OSAKA" selected>大阪</option>
-	  <option value="TOKYO">東京</option>
-	  <option value="NAGOYA">名古屋</option>
-	  <option value="FUKUOKA">福岡</option>
-	  <option value="SAPPORO">札幌</option>
+	  <option th:each="city : ${cities}"
+	          th:value="${city.name()}"
+	          th:text="${city.label}"
+	          th:selected="${city.name() == defaultCity}">
+	  </option>
 	</select>
+
   </header>
 
   <!-- ローディング -->
   <div id="loading" class="loading hidden">読み込み中…</div>
 
-  <!-- 今日の状態 -->
   <section id="statusCard" class="card status-card">
     <div class="status-header">
       <h2>今日の状態</h2>
-      <span id="condition" class="badge"></span>
+
+      <span id="condition"
+            class="badge"
+            th:text="${pressure.conditionLevel.label}"
+            th:classappend="${pressure.conditionLevel.name()}">
+      </span>
     </div>
 
     <div class="status-main">
       <div class="status-item">
         <span class="label">現在</span>
-        <span id="current" class="value"></span>
+        <span id="current"
+              class="value"
+              th:text="${pressure.currentPressure}">
+        </span>
         <span class="unit">hPa</span>
       </div>
 
       <div class="status-item">
         <span class="label">昨日比</span>
-        <span id="difference" class="value"></span>
+        <span id="difference"
+              class="value"
+              th:text="${pressure.difference}">
+        </span>
         <span class="unit">hPa</span>
       </div>
     </div>
 
-    <!-- JSが使うので非表示でも残す -->
-    <span id="yesterday" class="hidden"></span>
+    <span id="yesterday"
+          class="hidden"
+          th:text="${pressure.yesterdayPressure}">
+    </span>
 
-    <p id="warningMessage" class="message hidden"></p>
+    <p id="warningMessage"
+       class="message"
+       th:if="${pressure.conditionLevel != T(com.example.pressurecare.model.ConditionLevel).SAFE}"
+       th:text="${pressure.conditionLevel.label}">
+    </p>
   </section>
+
   
   <!-- 明日の注意 -->
   <section id="tomorrowMsg" class="tomorrow hidden"></section>

@@ -10,7 +10,7 @@ class PressureApp {
   defaultSettings = {
     warning: -3,     // 注意判定の閾値
     danger: -6,      // 警戒判定の閾値
-    refreshMin: 30   // 自動更新間隔（分）
+    refreshMin: 1   // 自動更新間隔（分）
   };
 
   constructor() {
@@ -34,17 +34,20 @@ class PressureApp {
     this.loadPressure         = this.loadPressure.bind(this);
     this.loadWeeklyPressure   = this.loadWeeklyPressure.bind(this);
     this.applySettingsFromUI  = this.applySettingsFromUI.bind(this);
+	this.defaultCity = this.citySelect?.dataset.defaultCity;
   }
 
   // ================================
   // 初期化処理
   // ================================
   init() {
-    // 初期データ取得
+	// Thymeleafで渡された初期都市を反映
+	if (this.defaultCity && this.citySelect) {
+	   this.citySelect.value = this.defaultCity;
+	 }    // 初期データ取得
     this.loadPressure();
     this.loadWeeklyPressure();
     this.startAutoRefresh();
-
     // ===== 都市変更イベント =====
     if (this.citySelect) {
       this.citySelect.addEventListener('change', () => {
@@ -190,47 +193,75 @@ class PressureApp {
     const warningEl   = document.getElementById('warningMessage');
     if (!conditionEl || !warningEl) return;
 
-    conditionEl.textContent = data.conditionLevel;
-    conditionEl.className   = '';
+    // 表示用（label）
+    const labelMap = {
+      SAFE: '安全',
+      WARNING: '注意',
+      DANGER: '警戒'
+    };
+
+    conditionEl.textContent = labelMap[data.conditionLevel] ?? data.conditionLevel;
+
+    // クラスは enum 名
+    conditionEl.className = 'badge';
+    conditionEl.classList.add(data.conditionLevel);
+
     warningEl.classList.add('hidden');
 
     switch (data.conditionLevel) {
       case 'DANGER':
-        conditionEl.classList.add('danger-level');
         warningEl.textContent = '体調管理に十分注意してください';
         warningEl.classList.remove('hidden');
         break;
       case 'WARNING':
-        conditionEl.classList.add('warning-level');
         warningEl.textContent = '無理は控えめにしましょう';
         warningEl.classList.remove('hidden');
         break;
-      default:
-        conditionEl.classList.add('safe');
     }
   }
-
   // ================================
   // 現在・前日気圧取得
   // ================================
   loadPressure() {
+    // select から都市コードを取得（未選択なら処理しない）
     const city = this.citySelect?.value;
+    if (!city) return;
+
+    // ローディング表示（非同期開始）
     this.showLoading();
 
-    fetch(`/pressure/data?city=${city}`)
-      .then(r => {
-        if (!r.ok) throw new Error();
-        return r.json();
-      })
-      .then(data => {
-        this.renderPressure(data);
-        this.saveLS(this.STORAGE_CURRENT, data);
-      })
-      .catch(() => {
-        // 通信失敗時はキャッシュ表示
-        const cached = this.loadLS(this.STORAGE_CURRENT);
-        if (cached) this.renderPressure(cached);
-      })
+    // fetch は Promise を返す（ここから Promiseチェーン開始）
+    fetch(`/pressure/data?city=${encodeURIComponent(city)}`)
+
+      // ===== A =====
+      // HTTPレスポンスの成否判定
+      // res.ok === false の場合は throw
+      // throw された時点で catch にジャンプ
+      .then(this.handleResponse)
+
+      // ===== B =====
+      // Response → JSON に変換
+      // res.json() も Promise を返す
+      // resolve されたデータが次の then に渡る
+      .then(this.parseJson)
+
+      // ===== C =====
+      // 成功時の最終処理
+      // 画面描画
+      // localStorage保存
+      // return data で次の then に値を渡せる
+      .then(data => this.onSuccess(data))
+
+      // ===== ERROR =====
+      // 上記のどこかで throw / reject されたらここに来る
+      // 通信エラー
+      // HTTPエラー
+      // JSON変換エラーなど
+      .catch(err => this.onError(err))
+
+      // ===== FINALLY =====
+      // 成功・失敗に関係なく必ず実行される
+      // ローディング解除など後処理に使う
       .finally(() => this.hideLoading());
   }
 
@@ -238,25 +269,91 @@ class PressureApp {
   // 週間気圧取得
   // ================================
   loadWeeklyPressure() {
+    // 都市未選択なら何もしない
     const city = this.citySelect?.value;
+    if (!city) return;
 
-    fetch(`/pressure/weekly?city=${city}`)
-      .then(r => {
-        if (!r.ok) throw new Error();
-        return r.json();
-      })
+    // 週間データ取得（Promise開始）
+    fetch(`/pressure/weekly?city=${encodeURIComponent(city)}`)
+
+      // ===== A =====
+      // HTTPレスポンスチェック
+      .then(this.handleResponse)
+
+      // ===== B =====
+      // JSONへ変換（Promise）
+      .then(this.parseJson)
+
+      // ===== C =====
+      // 正常時処理をまとめて実行
       .then(data => {
+        // グラフ描画
         this.renderWeekly(data);
+
+        // 明日の体調予測
         this.renderTomorrowPrediction(data);
+
+        // localStorage に保存
         this.saveLS(this.STORAGE_WEEKLY, data);
+
+        // return することで Promiseチェーンを継続可能
+        return data;
       })
-      .catch(() => {
+
+      // ===== ERROR =====
+      // エラー時はキャッシュから復元
+      .catch(err => {
+        console.error(err);
         const cached = this.loadLS(this.STORAGE_WEEKLY);
         if (cached) {
           this.renderWeekly(cached);
-          this.renderTomorrowPrediction(cached);
         }
       });
+  }
+
+  // ================================
+  // Promiseチェーン用 共通処理
+  // ================================
+
+  // HTTPステータスチェック用
+  handleResponse(res) {
+    // fetch は 404/500 でも reject しない
+    // そのため自分で throw する必要がある
+    if (!res.ok) {
+      throw new Error('pressure api error');
+    }
+    // 正常時は Response を次の then に渡す
+    return res;
+  }
+
+  // Response → JSON 変換
+  parseJson(res) {
+    // res.json() は Promise を返す
+    // resolve された結果が次の then に渡る
+    return res.json();
+  }
+
+  // 成功時の共通処理
+  onSuccess(data) {
+    // 画面反映
+    this.renderPressure(data);
+
+    // localStorage 保存
+    this.saveLS(this.STORAGE_CURRENT, data);
+
+    // 次の then に値を渡したい場合は return
+    return data;
+  }
+
+  // エラー時の共通処理
+  onError(err) {
+    console.error(err);
+
+    // 通信失敗時はキャッシュ表示
+    const cached = this.loadLS(this.STORAGE_CURRENT);
+    if (cached) {
+      this.renderPressure(cached);
+    }
   }
 
   // ================================

@@ -40,11 +40,22 @@ public class PressureController {
      * @param model 画面に渡すデータ
      * @return 表示するテンプレート名
      */
-    @GetMapping
+    @GetMapping("/")
     public String showIndex(Model model) {
-        model.addAttribute("cities", City.values());
-        return "index";
+    	 model.addAttribute("cities", City.values());
+    	    model.addAttribute("defaultCity", City.OSAKA.name());
+
+    	    PressureInfo info;
+    	    try {
+    	        info = pressureService.getPressureFromApi(City.OSAKA);
+    	    } catch (Exception e) {
+    	        info = PressureInfo.empty();
+    	    }
+
+    	    model.addAttribute("pressure", info);
+    	    return "index";
     }
+
 
     /**
      * 現在の気圧データを取得するAPI
